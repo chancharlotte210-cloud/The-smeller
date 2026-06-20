@@ -1,0 +1,25 @@
+#include <Wire.h>
+#include <Adafruit_SCD4x.h>
+
+Adafruit_SCD4x scd4x;
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(21, 22);
+  
+  if(!scd4x.begin()) {
+    Serial.println("SCD40 not found!");
+    for(;;);
+  }
+  scd4x.startPeriodicMeasurement();
+  Serial.println("SCD40 ready!");
+}
+
+void loop() {
+  if(scd4x.readMeasurement()) {
+    Serial.print("CO2: "); Serial.print(scd4x.CO2);
+    Serial.print(" ppm, Temp: "); Serial.print(scd4x.temperature);
+    Serial.print(" °C, Hum: "); Serial.println(scd4x.relativeHumidity);
+  }
+  delay(1000);
+}
