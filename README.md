@@ -22,3 +22,15 @@ Feature	Description
   OLED display,
   Visual quality bar,
   Status text:	EXCELLENT, GOOD, MODERATE, POOR, or VERY POOR
+
+How to Build It:
+Install Arduino IDE, add ESP32 board support (URL: https://dl.espressif.com/dl/package_esp32_index.json), and install three libraries: Adafruit SSD1306, Adafruit GFX, and Adafruit SGP30.
+Wire the OLED display to the ESP32: VDD→3.3V, VSS→GND, SDA→GPIO21, SCL→GPIO22.
+Wire the SGP30 sensor in parallel with the OLED: VCC→3.3V, GND→GND, SDA→GPIO21, SCL→GPIO22 (both sensors share the same I²C pins).
+Run the I2C scanner sketch to confirm your ESP32 detects the OLED at 0x3C (or 0x3D) and the SGP30 at 0x58.
+Copy the combined code (from the previous reply) into Arduino IDE – it reads both sensors and displays VOC (ppb) and eCO₂ (ppm) on the OLED.
+Select your board: Go to Tools → Board → ESP32 Arduino → DOIT ESP32 DEVKIT V1, then select the correct COM port.
+Upload the code by clicking the right-arrow button – wait for "Done uploading" in the status bar.
+Open the Serial Monitor at 115200 baud to see debug output and verify readings appear every 2 seconds.
+Test the monitor: Wait 3–5 minutes for the sensor to stabilize, then try opening a window or spraying a tiny amount of air freshener nearby – you should see VOC levels change.
+Add a status indicator (optional) – the code already includes a quality bar and text status (Excellent → Very Poor) on the OLED.
