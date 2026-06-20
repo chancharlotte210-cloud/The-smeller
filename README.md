@@ -23,6 +23,14 @@ Feature	Description
   Visual quality bar,
   Status text:	EXCELLENT, GOOD, MODERATE, POOR, or VERY POOR
 
+Status Indicators
+TVOC (ppb)	Status	Color
+0 – 249	EXCELLENT	🟢 Green
+250 – 499	GOOD	🟢 Green
+500 – 999	MODERATE	🟡 Yellow
+1000 – 1999	POOR	🟠 Orange
+2000+	VERY POOR	🔴 Red
+
 How to Build It:
 Install Arduino IDE, add ESP32 board support (URL: https://dl.espressif.com/dl/package_esp32_index.json), and install three libraries: Adafruit SSD1306, Adafruit GFX, and Adafruit SGP30.
 Wire the OLED display to the ESP32: VDD→3.3V, VSS→GND, SDA→GPIO21, SCL→GPIO22.
@@ -34,3 +42,12 @@ Upload the code by clicking the right-arrow button – wait for "Done uploading"
 Open the Serial Monitor at 115200 baud to see debug output and verify readings appear every 2 seconds.
 Test the monitor: Wait 3–5 minutes for the sensor to stabilize, then try opening a window or spraying a tiny amount of air freshener nearby – you should see VOC levels change.
 Add a status indicator (optional) – the code already includes a quality bar and text status (Excellent → Very Poor) on the OLED.
+
+Testing Your Monitor
+Place it in a room and wait 3-5 minutes for stabilization
+
+Open a window – you should see VOC levels drop
+
+Spray a tiny amount of air freshener nearby – watch VOCs spike
+
+Close the room – CO₂ will slowly rise
