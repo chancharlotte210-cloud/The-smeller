@@ -1,0 +1,154 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <Adafruit_SGP30.h>
+
+// --- OLED Display Settings ---
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
+#define OLED_ADDRESS 0x3C  // Common address, try 0x3D if this doesn't work
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+Adafruit_SGP30 sgp30;
+
+// --- Variables for readings ---
+uint16_t tvoc, eco2;
+unsigned long lastReadTime = 0;
+const unsigned long READ_INTERVAL = 2000; // Read every 2 seconds
+
+// --- Air Quality Status ---
+String getAQStatus(uint16_t tvoc) {
+  if (tvoc < 250) return "EXCELLENT";
+  else if (tvoc < 500) return "GOOD";
+  else if (tvoc < 1000) return "MODERATE";
+  else if (tvoc < 2000) return "POOR";
+  else return "VERY POOR";
+}
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("\n=== AIR QUALITY MONITOR ===\n");
+  
+  // --- Initialize I2C (Using GPIO21 for SDA, GPIO22 for SCL) ---
+  Wire.begin(21, 22);
+  
+  // --- Initialize OLED ---
+  if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS)) {
+    Serial.println("OLED display not found!");
+    Serial.println("Check wiring and I2C address.");
+    while (true); // Halt if OLED not detected
+  }
+  
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(10, 20);
+  display.println("INIT...");
+  display.display();
+  delay(1000);
+  
+  // --- Initialize SGP30 ---
+  if (!sgp30.begin()) {
+    Serial.println("SGP30 sensor not found!");
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println("SGP30 ERROR!");
+    display.println("Check wiring.");
+    display.display();
+    while (true); // Halt if SGP30 not detected
+  }
+  
+  Serial.println("SGP30 sensor ready!");
+  Serial.println("Waiting for stabilization...");
+  
+  // Wait for sensor to warm up (first few readings may be less accurate)
+  delay(1000);
+  
+  // Display ready message
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0, 0);
+  display.println("AIR QUALITY");
+  display.println("MONITOR");
+  display.println("");
+  display.setTextSize(1);
+  display.println("READY!");
+  display.display();
+  delay(1500);
+}
+
+void loop() {
+  // Read sensor every READ_INTERVAL milliseconds
+  if (millis() - lastReadTime >= READ_INTERVAL) {
+    lastReadTime = millis();
+    
+    // Read SGP30
+    if (sgp30.IAQmeasure()) {
+      tvoc = sgp30.TVOC;
+      eco2 = sgp30.eCO2;
+      
+      // Get status
+      String status = getAQStatus(tvoc);
+      
+      // --- Display on OLED ---
+      display.clearDisplay();
+      
+      // Title bar
+      display.setTextSize(1);
+      display.setTextColor(SSD1306_WHITE);
+      display.setCursor(0, 0);
+      display.println("Air Quality Monitor");
+      
+      // Draw separator line
+      display.drawLine(0, 10, 128, 10, SSD1306_WHITE);
+      
+      // VOC Reading
+      display.setCursor(0, 16);
+      display.setTextSize(1);
+      display.print("VOC: ");
+      display.print(tvoc);
+      display.println(" ppb");
+      
+      // eCO2 Reading
+      display.setCursor(0, 28);
+      display.print("eCO2: ");
+      display.print(eco2);
+      display.println(" ppm");
+      
+      // Status with color indicator (visual bar)
+      display.setCursor(0, 40);
+      display.setTextSize(1);
+      display.print("Status: ");
+      display.println(status);
+      
+      // Draw a simple quality bar
+      int barWidth = map(tvoc, 0, 2000, 0, 100);
+      if (barWidth > 100) barWidth = 100;
+      display.drawRect(0, 52, 128, 10, SSD1306_WHITE);
+      display.fillRect(2, 54, barWidth, 6, SSD1306_WHITE);
+      
+      display.display();
+      
+      // --- Print to Serial Monitor ---
+      Serial.println("=== READING ===");
+      Serial.print("TVOC: "); Serial.print(tvoc); Serial.println(" ppb");
+      Serial.print("eCO2: "); Serial.print(eco2); Serial.println(" ppm");
+      Serial.print("Status: "); Serial.println(status);
+      Serial.println("==============");
+      
+    } else {
+      // If reading fails
+      display.clearDisplay();
+      display.setCursor(0, 20);
+      display.setTextSize(1);
+      display.println("SGP30 ERROR!");
+      display.println("Read failed.");
+      display.display();
+      Serial.println("SGP30 read failed!");
+    }
+  }
+  
+  // Small delay to prevent watchdog issues
+  delay(50);
+}
