@@ -1,0 +1,55 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <Adafruit_SGP30.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+Adafruit_SGP30 sgp30;
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Initialize OLED
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println("OLED failed");
+    for(;;);
+  }
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  
+  // Initialize SGP30
+  if(!sgp30.begin()) {
+    display.println("SGP30 not found!");
+    display.display();
+    for(;;);
+  }
+  
+  display.println("SGP30 ready!");
+  display.display();
+  delay(2000);
+}
+
+void loop() {
+  // Read SGP30
+  sgp30.IAQmeasure();
+  uint16_t tvoc = sgp30.TVOC;
+  uint16_t eco2 = sgp30.eCO2;
+  
+  // Display on OLED
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.println("SGP30 Readings:");
+  display.print("eCO2: "); display.print(eco2); display.println(" ppm");
+  display.print("TVOC: "); display.print(tvoc); display.println(" ppb");
+  display.display();
+  
+  Serial.print("eCO2: "); Serial.print(eco2); Serial.print(" ppm, ");
+  Serial.print("TVOC: "); Serial.print(tvoc); Serial.println(" ppb");
+  
+  delay(2000);
+}
